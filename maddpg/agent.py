@@ -48,11 +48,11 @@ class Agent:
     def discretize_tensor(self,mu_prime_physical):
         if(self.n_actions_communication==0):return mu_prime_physical.cpu().detach().numpy()
 
-        mu_physical=mu_prime_physical[0:self.n_actions_physical]
-        mu_comm=mu_prime_physical[self.n_actions_physical:]
+        mu_physical=mu_prime_physical[0:self.n_actions_physical].to(self.actor.device)
+        mu_comm=mu_prime_physical[self.n_actions_physical:].to(self.actor.device)
 
         index=torch.argmax(mu_comm)
-        mu_comm=torch.tensor([0]*self.n_actions_communication,dtype=torch.float32)
+        mu_comm=torch.tensor([0]*self.n_actions_communication,dtype=torch.float32).to(self.actor.device)
         mu_comm[index]=1
 
         mu_net=torch.cat((mu_physical,mu_comm))
@@ -61,9 +61,9 @@ class Agent:
     def Action(self,observation,target=False):
         self.actor.eval()
         if target:
-            mu_physical=self.target_actor.forward(observation)    
+            mu_physical=self.target_actor.forward(observation).to(self.actor.device)    
         else:
-            mu_physical=self.actor.forward(observation)
+            mu_physical=self.actor.forward(observation).to(self.actor.device)
     
         mu_prime_physical=mu_physical+torch.tensor(self.noise(),dtype=torch.float).to(self.actor.device)
         self.actor.train()

@@ -66,7 +66,7 @@ class CriticNetwork(nn.Module):
             actions=list(chain.from_iterable(actions)) #To concatenate this into a single list
             actions=torch.tensor(actions,dtype=torch.float32).to(self.device)
 
-        state_action_input=torch.cat((states,actions))
+        state_action_input=torch.cat((states,actions)).to(self.device)
 
         self.eval()
         state_action_value = self.fc1(state_action_input)
@@ -124,8 +124,8 @@ class ActorNetwork(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
 
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-
+        self.to(self.device)
+        
         #Communication actions are separate from physical actions.
 
     def forward(self,observations):

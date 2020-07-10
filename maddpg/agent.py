@@ -5,18 +5,19 @@ from networks import ActorNetwork,CriticNetwork
 from utils import ReplayBuffer,OUActionNoise
 
 class Agent:
-    def __init__(self,id_number, alpha, beta, input_dims, n_actions_physical=5,n_actions_communication=5,gamma=0.99,tau=0.1,
+    def __init__(self,id_number, alpha, beta, input_dims, n_actions_physical=5,n_actions_communication=5,tau=0.1,
                   max_size=1000, layer1_size=64,
                  layer2_size=64, batch_size=64):
+
         self.id=id_number
         self.input_dims=input_dims
         self.beta=beta
 
         self.n_actions_physical=n_actions_physical
         self.n_actions_communication=n_actions_communication
+        
         self.n_actions=n_actions_physical+n_actions_communication
 
-        self.gamma = gamma
         self.tau = tau #Soft update coefficient for the target networks
 
         self.memory = ReplayBuffer(max_size)

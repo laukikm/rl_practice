@@ -66,6 +66,10 @@ class CriticNetwork(nn.Module):
             actions=list(chain.from_iterable(actions)) #To concatenate this into a single list
             actions=torch.tensor(actions,dtype=torch.float32).to(self.device)
 
+        #if not actions_need_processing:
+            #import ipdb
+            #ipdb.set_trace()
+
         state_action_input=torch.cat((states,actions)).to(self.device)
 
         self.eval()
@@ -136,7 +140,7 @@ class ActorNetwork(nn.Module):
         x = self.fc2(x)
         x = self.bn2(x)
         x = F.relu(x)
-        x=torch.tanh(self.fc3(x))
+        x=self.fc3(x)
         return x
 
     def save_checkpoint(self):

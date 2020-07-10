@@ -17,7 +17,7 @@ from copy import deepcopy
 #All the agents achieve their objectives at different instants
 
 class MADDPG:
-    def __init__(self, agent_init_params,batch_size=100,replay_buffer_capacity=500,
+    def __init__(self, agent_init_params,batch_size=1024,replay_buffer_capacity=100000,
                  gamma=0.95, tau=0.01, lr=0.01, hidden_dim=64,
                  discrete_action=False,env='simple_reference'):
         """
@@ -52,13 +52,16 @@ class MADDPG:
         self.gamma = gamma
         self.tau = tau
         self.lr = lr
+
+        '''
         self.discrete_action = discrete_action
         self.pol_dev = 'cpu'  # device for policies
         self.critic_dev = 'cpu'  # device for critics
         self.trgt_pol_dev = 'cpu'  # device for target policies
         self.trgt_critic_dev = 'cpu'  # device for target critics
         self.niter = 0
-
+        '''
+        
         self.replay_buffer=ReplayBuffer(replay_buffer_capacity)
         self.batch_size=batch_size
 
@@ -106,7 +109,6 @@ class MADDPG:
 
         states_batch,actions_batch,rewards_batch,next_states_batch,terminal_batch=self.replay_buffer.sample_buffer(self.batch_size)
 
-
         for agent in self.agents:
             #Critic Update
             self.update_critic(agent,states_batch,actions_batch,rewards_batch,next_states_batch,terminal_batch)
@@ -129,7 +131,7 @@ class MADDPG:
 
             agent.critic.eval()                        
             Q=agent.critic.forward(current_states,current_actions).to(agent.critic.device)
-            target=current_rewards[agent.id]+agent.critic.forward(next_states,next_step_actions).to(agent.critic.device).detach()
+            target=current_rewards[agent.id]+self.gamma*agent.critic.forward(next_states,next_step_actions).to(agent.critic.device).detach()
             
             loss=self.loss(Q,target)
             critic_losses.append(loss)
@@ -140,6 +142,8 @@ class MADDPG:
 
         agent.critic.optimizer.zero_grad()
         mean_critic_loss.backward()
+
+        nn.utils.clip_grad_norm_(agent.critic.parameters(), 0.5)
         agent.critic.optimizer.step()
 
     def update_actor(self,agent,states_batch,actions_batch,rewards_batch,next_states_batch,terminal_batch):
@@ -168,9 +172,7 @@ class MADDPG:
             actions_for_critic=list(chain.from_iterable(actions_for_critic))
             actions_for_critic=torch.stack(actions_for_critic)
 
-
-
-            Q=-agent.critic.forward(current_states,actions_for_critic,actions_need_processing=False)
+            Q= -agent.critic.forward(current_states,actions_for_critic,actions_need_processing=False)
             Q_values.append(Q)
 
         Q_values=torch.stack(Q_values,0)
@@ -181,4 +183,6 @@ class MADDPG:
         agent.actor.train()
 
         mean_Q.backward()
+
+        nn.utils.clip_grad_norm_(agent.actor.parameters(), 0.5)
         agent.actor.optimizer.step()
